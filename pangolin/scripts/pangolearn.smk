@@ -20,6 +20,12 @@ if config.get("lineages_csv"):
 else:
     config["lineages_csv"]=""
 
+if config.get("usher_protobuf"):
+    print("Using UShER as inference engine")
+else:
+    config["usher_protobuf"]=""
+
+ruleorder: use_usher > overwrite
 
 if config["lineages_csv"] != "":
     rule all:
@@ -328,4 +334,17 @@ rule report_results:
         -p {input.csv:q} \
         -b {input.lineages_csv:q} \
         -o {output:q} 
+        """
+
+rule use_usher:
+    input:
+        fasta = rules.align_to_reference.output.fasta,
+        usher_protobuf = config["usher_protobuf"]
+    output:
+        csv = config["outfile"]
+    shell:
+        """
+        echo "usher results go here" > {output.csv}
+        echo ""
+        echo "Output written to {output.csv}"
         """

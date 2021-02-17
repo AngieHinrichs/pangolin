@@ -44,6 +44,7 @@ def main(sysargs = sys.argv[1:]):
     parser.add_argument('--tempdir',action="store",help="Specify where you want the temp stuff to go. Default: $TMPDIR")
     parser.add_argument("--no-temp",action="store_true",help="Output all intermediate files, for dev purposes.")
     parser.add_argument('--decompress-model',action="store_true",dest="decompress",help="Permanently decompress the model file to save time running pangolin.")
+    parser.add_argument('--usher',action="store_true",help="Use UShER model instead of default pangoLEARN")
     parser.add_argument('--max-ambig', action="store", default=0.5, type=float,help="Maximum proportion of Ns allowed for pangolin to attempt assignment. Default: 0.5",dest="maxambig")
     parser.add_argument('--min-length', action="store", default=10000, type=int,help="Minimum query length allowed for pangolin to attempt assignment. Default: 10000",dest="minlen")
     parser.add_argument('--panGUIlin', action='store_true',help="Run web-app version of pangolin",dest="panGUIlin")
@@ -205,6 +206,7 @@ def main(sysargs = sys.argv[1:]):
     trained_model = ""
     header_file = ""
     lineages_csv = ""
+    usher_protobuf = ""
 
     for r,d,f in os.walk(data_dir):
         for fn in f:
@@ -214,7 +216,10 @@ def main(sysargs = sys.argv[1:]):
                 trained_model = os.path.join(r, fn)
             elif fn == "lineages.metadata.csv":
                 lineages_csv = os.path.join(r, fn)
-    if trained_model=="" or header_file==""  or lineages_csv=="":
+            elif fn == "lineageTree.pb":
+                usher_protobuf = os.path.join(r, fn)
+    if ((args.usher and usher_protobuf == "") or
+        (not args.usher and (trained_model=="" or header_file==""  or lineages_csv==""))):
         print(pfunk.cyan("""Check your environment, didn't find appropriate files from the pangoLEARN repo.\n Trained model must be installed, please see https://cov-lineages.org/pangolin.html for installation instructions."""))
         exit(1)
     else:
@@ -235,9 +240,12 @@ def main(sysargs = sys.argv[1:]):
                 sys.exit(0)
 
         print(pfunk.green("\nData files found"))
-        print(f"Trained model:\t{trained_model}")
-        print(f"Header file:\t{header_file}")
-        print(f"Lineages csv:\t{lineages_csv}")
+        if args.usher:
+            print(f"UShER protobuf:\t{usher_protobuf}")
+        else:
+            print(f"Trained model:\t{trained_model}")
+            print(f"Header file:\t{header_file}")
+            print(f"Lineages csv:\t{lineages_csv}")
         config["trained_model"] = trained_model
         config["header_file"] = header_file
 
@@ -259,6 +267,8 @@ def main(sysargs = sys.argv[1:]):
     if args.panGUIlin:
         config["lineages_csv"]=lineages_csv
 
+    if args.usher:
+        config["usher_protobuf"]=usher_protobuf
 
     if args.verbose:
         quiet_mode = False
