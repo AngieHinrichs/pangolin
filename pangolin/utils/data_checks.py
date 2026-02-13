@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
-import pkg_resources
 from pangolin.utils.log_colours import green,cyan,red
 import sys
 import os
 import gzip
 
+try:
+    # Python 3.8: there is no importlib.resources, only importlib_resources
+    import importlib_resources
+    importlib_resources_files = importlib_resources.files
+except ModuleNotFoundError:
+    # Python 3.11: there is no importlib_resources, only importlib.resources
+    import importlib.resources
+    importlib_resources_files = importlib.resources.files
+
+
 from pangolin.utils.config import *
 
 def package_data_check(filename,directory,key,config):
-    try:
-        package_datafile = os.path.join(directory,filename)
-        data = pkg_resources.resource_filename('pangolin', package_datafile)
-        config[key] = data
-    except:
+    package_datafile = os.path.join(directory,filename)
+    path = importlib_resources_files('pangolin') / package_datafile
+    if os.path.isfile(path):
+        config[key] = path
+    else:
         sys.stderr.write(cyan(f'Error: Missing package data.')+f'\n\t- {filename}\nPlease install the latest pangolin version with `pangolin --update`.\n')
         sys.exit(-1)
 
